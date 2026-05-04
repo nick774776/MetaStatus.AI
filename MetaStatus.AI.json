@@ -1,0 +1,589 @@
+{
+  "name": "MetaStatus.AI",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks"
+            }
+          ]
+        }
+      },
+      "id": "71e026c3-f1c9-486b-a287-a7aaaf9d8c50",
+      "name": "⏰ Weekly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -464,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-1",
+              "name": "drug_keywords",
+              "value": "cancer treatment immunotherapy oncology",
+              "type": "string"
+            },
+            {
+              "id": "cfg-2",
+              "name": "competitor_companies",
+              "value": "Pfizer,Roche,Novartis,AstraZeneca,Merck",
+              "type": "string"
+            },
+            {
+              "id": "cfg-3",
+              "name": "therapeutic_area",
+              "value": "oncology",
+              "type": "string"
+            },
+            {
+              "id": "cfg-4",
+              "name": "email_recipient",
+              "value": "knikhil.niper2025@gmail.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e91a7ffe-5cb7-4945-8c4d-f0dafb1388d2",
+      "name": "⚙️ Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -240,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "db",
+              "value": "pubmed"
+            },
+            {
+              "name": "term",
+              "value": "={{ $json.drug_keywords }}"
+            },
+            {
+              "name": "retmax",
+              "value": "10"
+            },
+            {
+              "name": "retmode",
+              "value": "json"
+            },
+            {
+              "name": "sort",
+              "value": "relevance"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5b9e98c7-f993-4585-8f3c-5bd132ab9ebf",
+      "name": "🔬 PubMed — Search Recent Papers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "db",
+              "value": "pubmed"
+            },
+            {
+              "name": "id",
+              "value": "={{$json[\"esearchresult\"][\"idlist\"].join(\",\")}}"
+            },
+            {
+              "name": "rettype",
+              "value": "abstract"
+            },
+            {
+              "name": "retmode",
+              "value": "xml"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "94b5e5fb-4651-47fb-9003-f3ebb22d71bb",
+      "name": "📄 PubMed — Fetch Abstracts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://clinicaltrials.gov/api/v2/studies",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query.term",
+              "value": "={{ $('⚙️ Configuration').item.json.drug_keywords }}"
+            },
+            {
+              "name": "query.term",
+              "value": "AREA[OverallStatus]RECRUITING OR ACTIVE"
+            },
+            {
+              "name": "fields",
+              "value": "NCTId,BriefTitle,LeadSponsorName,Phase,OverallStatus,StartDate,PrimaryCompletionDate,Condition"
+            },
+            {
+              "name": "pageSize",
+              "value": "15"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d31348d7-cb6b-4218-8566-3e6af3891fe1",
+      "name": "💉 ClinicalTrials.gov — Active Trials",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.fda.gov/drug/event.json",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "search",
+              "value": "=receivedate:[20240101 TO 20241231]"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1050d3ab-e891-4a1c-867b-92b9324c904d",
+      "name": "⚠️ FDA — Adverse Events",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $('⚙️ Configuration').item.json.competitor_companies.split(',').slice(0,3).join(' OR ') + ' pharma drug approval' }}"
+            },
+            {
+              "name": "language",
+              "value": "en"
+            },
+            {
+              "name": "sortBy",
+              "value": "publishedAt"
+            },
+            {
+              "name": "pageSize",
+              "value": "10"
+            },
+            {
+              "name": "from",
+              "value": "={{ $now.minus(7, 'days').format('YYYY-MM-DD') }}"
+            },
+            {
+              "name": "apiKey",
+              "value": "33bcc18455214b9783625a8bfe74e7fb"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "31faec74-be3c-4f44-9e23-e1673c593269",
+      "name": "📰 NewsAPI — Competitor News",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process ClinicalTrials data\nconst trialsRaw = $input.first().json;\nconst studies = trialsRaw.studies || [];\n\nconst processed = studies.map(s => {\n  const p = s.protocolSection || {};\n  const id = p.identificationModule || {};\n  const status = p.statusModule || {};\n  const sponsor = p.sponsorCollaboratorsModule || {};\n  const design = p.designModule || {};\n\n  return {\n    nct_id: id.nctId || 'N/A',\n    title: id.briefTitle || 'N/A',\n    sponsor: (sponsor.leadSponsor || {}).name || 'N/A',\n    phase: (design.phases || []).join(', ') || 'N/A',\n    status: status.overallStatus || 'N/A',\n    start_date: status.startDateStruct?.date || 'N/A',\n    completion_date: status.primaryCompletionDateStruct?.date || 'N/A'\n  };\n});\n\n// Filter only competitor trials\nconst competitors = $('⚙️ Configuration').first().json.competitor_companies.split(',');\nconst competitorTrials = processed.filter(t =>\n  competitors.some(c => t.sponsor.toLowerCase().includes(c.trim().toLowerCase()))\n);\n\nreturn [{ json: { \n  all_trials: processed, \n  competitor_trials: competitorTrials,\n  total_count: processed.length,\n  competitor_count: competitorTrials.length,\n  fetch_date: new Date().toISOString().split('T')[0]\n}}];"
+      },
+      "id": "2323f368-e50a-4a09-9dab-751075f6fc6d",
+      "name": "🔄 Process Trial Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process FDA adverse events\nconst fdaRaw = $input.first().json;\nconst results = fdaRaw.results || [];\n\nconst summary = results.slice(0, 10).map(e => {\n  const drugs = (e.patient?.drug || []).slice(0, 3).map(d => \n    d.openfda?.brand_name?.[0] || d.medicinalproduct || 'Unknown'\n  );\n  const reactions = (e.patient?.reaction || []).slice(0, 3).map(r => r.reactionmeddrapt || 'Unknown');\n  return {\n    report_id: e.safetyreportid,\n    receive_date: e.receivedate,\n    drugs_involved: drugs.join(', '),\n    reactions: reactions.join(', '),\n    serious: e.serious === '1' ? 'Yes' : 'No'\n  };\n});\n\nreturn [{ json: {\n  adverse_event_sample: summary,\n  total_results: fdaRaw.meta?.results?.total || 0,\n  fetch_date: new Date().toISOString().split('T')[0]\n}}];"
+      },
+      "id": "1c20709e-89bc-4f66-bc6b-7afcd371c899",
+      "name": "🔄 Process FDA Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process competitor news\nconst newsRaw = $input.first().json;\nconst articles = newsRaw.articles || [];\n\nconst headlines = articles.slice(0, 8).map(a => ({\n  title: a.title,\n  source: a.source?.name || 'Unknown',\n  published: a.publishedAt?.split('T')[0] || 'N/A',\n  url: a.url,\n  description: a.description || ''\n}));\n\nreturn [{ json: {\n  news_headlines: headlines,\n  total_articles: newsRaw.totalResults || 0,\n  fetch_date: new Date().toISOString().split('T')[0]\n}}];"
+      },
+      "id": "f28113b6-a6e6-4259-ad3f-8239e5813b8a",
+      "name": "🔄 Process News Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "numberInputs": 3,
+        "options": {}
+      },
+      "id": "1fa2a7f6-09ea-42c0-9b39-475503afa650",
+      "name": "🔗 Merge All Intel",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        480,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ✅ STEP 1: Get input (ONLY ONCE)\nconst raw = $input.first().json;\n\n// ✅ STEP 2: Extract data (ONLY ONCE)\nconst trialsData = raw.all_trials || [];\nconst fdaData = [];\nconst newsData = [];\n\n// ✅ STEP 3: Config\nconst config = {\n  therapeutic_area: \"oncology\",\n  drug_keywords: \"cancer treatment\"\n};\n\n// ✅ STEP 4: Date\nconst today = new Date().toLocaleDateString('en-IN', { dateStyle: 'long' });\n\n// ✅ STEP 5: Build report\nlet report = `# 📊 Pharma Competitive Intelligence Report\\n\\n`;\n\nreport += `**Therapeutic Area:** ${config.therapeutic_area.toUpperCase()}\\n`;\nreport += `**Generated:** ${today}\\n`;\nreport += `**Keywords:** ${config.drug_keywords}\\n\\n---\\n\\n`;\n\nreport += `## 🧪 Clinical Trials (${trialsData.length})\\n`;\n\ntrialsData.slice(0,5).forEach(t => {\n  report += `- ${t.title || 'N/A'} (${t.phase || 'N/A'})\\n`;\n});\n\n// ✅ STEP 6: Return\nreturn [\n  {\n    json: { report }\n  }\n];"
+      },
+      "id": "f36c79cb-d491-4c52-afde-0f5a05f27245",
+      "name": "📊 Compile Intelligence Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "quality-check",
+              "leftValue": "={{ $json.report.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d99ce0b2-b6e4-4025-86f8-7b25c2757bc5",
+      "name": "✅ Quality Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        960,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "nikhilkumarrocks619@gmail.com",
+        "toEmail": "knikhil.niper2025@gmail.com",
+        "subject": "={{ new Date().toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) }}",
+        "html": "=<div style=\"font-family: Arial; line-height:1.6\">\n  <h2>📊 Pharma Competitive Intelligence Report</h2>\n\n  <p><b>Therapeutic Area:</b> {{ $('⚙️ Configuration').item.json.drug_keywords }}</p>\n\n  <p><b>Generated:</b> {{ $now.format('DD MMM YYYY') }}</p>\n\n  <hr>\n\n  <pre style=\"white-space: pre-wrap; font-family: Arial;\">\n{{ $json.report }}\n  </pre>\n\n  <hr>\n\n  <p style=\"font-size:12px; color:gray;\">\n    This email was sent automatically via n8n\n  </p>\n</div>",
+        "options": {}
+      },
+      "id": "893c26f3-e5b0-4927-bff7-2f788d159e43",
+      "name": "📧 Email Report",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1200,
+        144
+      ],
+      "webhookId": "b3ab1734-670f-40a9-9ea7-b2f43d6ada73",
+      "credentials": {
+        "smtp": {
+          "id": "s3Z0zKWvUoTEF8ow",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "79cb2a46-5983-415a-9e63-467ae0429b59",
+      "name": "XML"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const articlesRaw = $json?.PubmedArticleSet?.PubmedArticle || [];\nconst articles = Array.isArray(articlesRaw) ? articlesRaw : [articlesRaw];\n\nconst results = articles.map(article => {\n  let abstractRaw = article?.MedlineCitation?.Article?.Abstract?.AbstractText || \"\";\n\n  let abstractText = Array.isArray(abstractRaw)\n    ? abstractRaw.map(a => (typeof a === \"object\" ? a._ : a)).join(\" \")\n    : abstractRaw;\n\n  return {\n    source: \"PubMed\",\n    pmid: article?.MedlineCitation?.PMID?._ || article?.MedlineCitation?.PMID || \"\",\n    title: article?.MedlineCitation?.Article?.ArticleTitle || \"\",\n    abstract: abstractText,\n    journal: article?.MedlineCitation?.Article?.Journal?.Title || \"\",\n    year:\n      article?.MedlineCitation?.Article?.ArticleDate?.[0]?.Year ||\n      article?.MedlineCitation?.DateCompleted?.Year ||\n      \"\"\n  };\n});\n\n// ⚠️ RETURN ONLY ONE OBJECT (IMPORTANT)\nreturn {\n  json: { results }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        0
+      ],
+      "id": "35a7b8c0-aa36-45f3-8aae-5cb9c2e03719",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "⏰ Weekly Trigger": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Configuration": {
+      "main": [
+        [
+          {
+            "node": "🔬 PubMed — Search Recent Papers",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "💉 ClinicalTrials.gov — Active Trials",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "⚠️ FDA — Adverse Events",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📰 NewsAPI — Competitor News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔬 PubMed — Search Recent Papers": {
+      "main": [
+        [
+          {
+            "node": "📄 PubMed — Fetch Abstracts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💉 ClinicalTrials.gov — Active Trials": {
+      "main": [
+        [
+          {
+            "node": "🔄 Process Trial Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚠️ FDA — Adverse Events": {
+      "main": [
+        [
+          {
+            "node": "🔄 Process FDA Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📰 NewsAPI — Competitor News": {
+      "main": [
+        [
+          {
+            "node": "🔄 Process News Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Process Trial Data": {
+      "main": [
+        [
+          {
+            "node": "🔗 Merge All Intel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Process FDA Data": {
+      "main": [
+        [
+          {
+            "node": "🔗 Merge All Intel",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "🔗 Merge All Intel": {
+      "main": [
+        [
+          {
+            "node": "📊 Compile Intelligence Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Compile Intelligence Report": {
+      "main": [
+        [
+          {
+            "node": "✅ Quality Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Quality Check": {
+      "main": [
+        [
+          {
+            "node": "📧 Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📄 PubMed — Fetch Abstracts": {
+      "main": [
+        [
+          {
+            "node": "XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Process News Data": {
+      "main": [
+        [
+          {
+            "node": "🔗 Merge All Intel",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bd558663-bcde-4667-aaef-29c97d8acf03",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5b5220afd210c570c53c45c6105a2bf1296a59479b8ea12031a5fdff0d3d6991"
+  },
+  "id": "vaPB2kwwCru6kPjx",
+  "tags": []
+}
