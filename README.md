@@ -6,6 +6,14 @@ MetaStatus.AI is an automated competitive intelligence workflow built with [n8n]
 
 The workflow runs on a weekly schedule, gathering up-to-date information across various facets of the pharmaceutical industry, specifically focusing on oncology and cancer treatments. It consolidates this data into a structured report and automatically emails it to the designated stakeholders.
 
+## Screenshots
+
+![MetaStatus.AI n8n Workflow Editor](assets/workflow.png)
+*n8n Workflow configuration showing multiple API integrations and data processing nodes.*
+
+![Generated Email Report](assets/email_report.png)
+*Sample Pharma Competitive Intelligence Report automatically delivered via email.*
+
 ## Features & Data Sources
 
 The workflow integrates with multiple APIs to fetch comprehensive data:
